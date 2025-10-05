@@ -9,16 +9,33 @@ from functools import wraps
 import requests
 from urllib.parse import quote_plus
 import xml.etree.ElementTree as ET
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import generate_csrf
+from PIL import Image, ImageOps
+from dotenv import load_dotenv
+
+load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
 app = Flask(__name__, instance_relative_config=True)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///reduced_food.db'
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']  # require env var
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'reduced_food.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.instance_path, 'uploads')
+# Secure cookies in production
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
+
+# CSRF protection for all POST requests
+csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
 
+# Make csrf_token() available in templates (for non-WTF forms)
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf)
 
 class Place(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,23 +100,66 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 def _save_upload(file_storage):
     """
-    Save an uploaded image file to static/uploads and return the stored filename.
-    Returns None if no file or invalid extension.
+    Validate and save an uploaded image to instance/uploads; return stored filename.
+    Returns None if no file or invalid image.
+    - Verifies real image content (not just extension)
+    - Strips EXIF and fixes orientation
+    - Resizes to max 1600px on the longest side
     """
-    if not file_storage:
+    if not file_storage or not getattr(file_storage, 'filename', None):
         return None
+
     filename = secure_filename(file_storage.filename or "")
     if not filename:
         return None
+
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in ALLOWED_EXTENSIONS:
         flash("Invalid image type. Allowed: png, jpg, jpeg, gif", "warning")
         return None
-    unique_name = f"{uuid.uuid4().hex}.{ext}"
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-    save_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
-    file_storage.save(save_path)
-    return unique_name
+
+    try:
+        # Verify image content
+        file_storage.stream.seek(0)
+        with Image.open(file_storage.stream) as im_verify:
+            im_verify.verify()
+
+        # Re-open for processing
+        file_storage.stream.seek(0)
+        with Image.open(file_storage.stream) as im:
+            # Normalize orientation and strip metadata
+            im = ImageOps.exif_transpose(im)
+
+            # Resize down if needed
+            MAX_DIM = 1600
+            im.thumbnail((MAX_DIM, MAX_DIM))
+
+            # Choose final format/extension
+            fmt = (im.format or "").upper()
+            if fmt not in ("JPEG", "PNG", "GIF"):
+                fmt = "JPEG"
+            ext_map = {"JPEG": "jpg", "PNG": "png", "GIF": "gif"}
+            out_ext = ext_map[fmt]
+
+            unique_name = f"{uuid.uuid4().hex}.{out_ext}"
+            os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+            save_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
+
+            # Convert modes and save with sensible defaults
+            if fmt == "JPEG":
+                if im.mode not in ("RGB", "L"):
+                    im = im.convert("RGB")
+                im.save(save_path, format="JPEG", quality=85, optimize=True)
+            elif fmt == "PNG":
+                im.save(save_path, format="PNG", optimize=True)
+            else:  # GIF
+                im.save(save_path, format="GIF")
+
+        return unique_name
+
+    except Exception:
+        flash("Uploaded file is not a valid image.", "warning")
+        return None
 
 
 # --- CAS auth (University of Bath) ---
@@ -257,7 +317,17 @@ def add_review(place_id):
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.after_request
+def set_security_headers(resp):
+    resp.headers['X-Content-Type-Options'] = 'nosniff'
+    resp.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    resp.headers['Referrer-Policy'] = 'no-referrer'
+    resp.headers['Permissions-Policy'] = 'geolocation=()'
+    resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    resp.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data: blob:; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' https://router.project-osrm.org; frame-ancestors 'self';"
+    return resp
+
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(debug=False)

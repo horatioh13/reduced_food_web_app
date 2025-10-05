@@ -12,6 +12,10 @@ wheels/
 # User uploaded files (now stored in instance/uploads)
 instance/uploads/
 instance/reduced_food.db
+reduced_food.db
 
 # development environment files
 .vscode/
+
+# secret key
+.env

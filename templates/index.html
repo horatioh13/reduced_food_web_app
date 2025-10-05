@@ -80,6 +80,7 @@
                       </button>
                       <div class="collapse mt-2" id="review-form-{{ place.id }}">
                         <form method="post" action="{{ url_for('add_review', place_id=place.id) }}" class="row g-2" enctype="multipart/form-data">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                           <div class="col-auto">
                             <label for="rating-{{ place.id }}" class="visually-hidden">Rating</label>
                             <select id="rating-{{ place.id }}" name="rating" class="form-select" required>
@@ -126,6 +127,7 @@
             <div class="card-header">Add a store in Bath</div>
             <div class="card-body">
               <form method="post" action="{{ url_for('add_place') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                   <label for="name" class="form-label">Place name</label>
                   <input type="text" id="name" name="name" class="form-control" required>
