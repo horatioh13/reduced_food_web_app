@@ -1,0 +1,63 @@
+/* Global layout */
+:root { --header-height: 56px; }
+body { background-color: #e7f3ff; margin: 0; }
+/* Container adjustments */
+.main-card { background: #fff; border-radius: 12px; border: 1px solid #dee2e6; padding: 16px; }
+.sticky-col { position: sticky; top: calc(var(--header-height) + 16px); }
+.map { width: 100%; height: 260px; border-radius: 6px; border: 1px solid #dee2e6; }
+.map-picker { height: 220px; }
+.map-small { height: 260px; width: 100%; }
+.flash-container { position: sticky; top: 12px; z-index: 1055; }
+
+/* Large spacer before the add-store section */
+.section-spacer-lg { margin-top: 4rem; }
+
+/* Footer panel */
+.site-footer { background: rgb(55, 60, 70); color: #fff; padding: 18px 0; margin-top: 48px; }
+.site-footer .footer-text { color: #fff; }
+.site-footer .makerspace-logo { height: 38px; opacity: 0.95; }
+
+.navbar { 
+  position: sticky; 
+  top: 0px; 
+  background-color: rgba(0, 43, 86, 1) !important; 
+  border-bottom: 0; 
+}
+/* If you want to change text/link colors in the navbar: */
+.navbar a { color: #fff; }
+
+/* Keep navbar links/brand white on hover/focus (override Bootstrap) */
+.navbar a:hover,
+.navbar a:focus,
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar .navbar-brand:hover,
+.navbar .navbar-brand:focus {
+  color: #fff !important;
+}
+
+/* Sticky footer: push footer to bottom on short pages */
+html, body { height: 100%; }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1 0 auto; }
+
+/* Navbar login button: larger, rectangular, brand color, underlined text */
+.btn-login {
+  background-color: rgb(255, 197, 0) !important;
+  border-color: rgb(255, 197, 0) !important;
+  color: rgb(0, 43, 86) !important;
+  border-radius: 0;            /* rectangular */
+  padding: 0.5rem 0.9rem;      /* a little larger than text */
+  font-size: 0.95rem;
+  text-decoration: underline !important;
+}
+.btn-login:hover,
+.btn-login:focus {
+  background-color: rgb(255, 197, 0) !important;
+  border-color: rgb(255, 197, 0) !important;
+  color: rgb(0, 43, 86) !important;
+  text-decoration: underline !important;
+}
+
+
+

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bath Reduced Food Deals</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
+      <div class="container d-flex align-items-center">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+          <img src="{{ url_for('static', filename='img/bath_logo.png') }}" alt="University of Bath" height="28" class="me-2 d-none d-sm-inline" onerror="this.style.display='none'">
+          <span>Reduced Food Bath</span>
+        </a>
+        <div class="ms-auto">
+          {% if session.get('user') %}
+            <span class="navbar-text me-2 small text-dark">Signed in as {{ session.get('user') }}</span>
+            <a class="btn btn-sm btn-outline-dark" href="{{ url_for('logout') }}">Log out</a>
+          {% else %}
+            <a class="btn btn-login" href="{{ url_for('login') }}">Log in with your bath account</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+  <main class="container my-4 pt-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between">
+        <div class="flex-grow-1 w-100">
+          <div class="footer-text text-start small text-white">
+            <div>Hosted by University of Bath Computing Services</div>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="small text-white">
+              Built by <a href="https://www.thesubath.com/makerspace/" target="_blank" rel="noopener" class="text-white text-decoration-underline">The Makerspace</a>
+            </div>
+            <div class="small text-secondary">Email hh940 for website improvement suggestions</div>
+          </div>
+        </div>
+        <a href="https://www.thesubath.com/makerspace/" target="_blank" rel="noopener" class="ms-md-3 mt-3 mt-md-0">
+          <!--<img src="{{ url_for('static', filename='img/makerspace_logo.png') }}" alt="The Makerspace" class="makerspace-logo" onerror="this.style.display='none'">  -->
+        </a>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>

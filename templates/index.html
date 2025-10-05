@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8 order-lg-1 mx-auto">
+    <div class="main-card">
+      <h2 class="mb-3 text-center">Stores</h2>
+
+      {% if places|length == 0 %}
+        <p class="text-center text-muted">No places yet. Be the first to add one below.</p>
+      {% else %}
+        <div class="accordion" id="placesAccordion">
+          {% for place in places %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-{{ place.id }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ place.id }}" aria-expanded="false" aria-controls="collapse-{{ place.id }}">
+                <span class="me-2">{{ place.name }}</span>
+                {% if place.created_at %}
+                  <span class="text-muted small"> • {{ place.created_at.strftime('%d %b %Y') }}</span>
+                {% endif %}
+                <span class="ms-3 text-muted small">{{ place.deal_hours or 'Hours: n/a' }}</span>
+                <span class="ms-auto small text-muted">Avg rating: {{ '%.1f'|format(place.average_rating or 0) }}/5</span>
+              </button>
+            </h2>
+            <div id="collapse-{{ place.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ place.id }}" data-bs-parent="#placesAccordion">
+              <div class="accordion-body">
+                <div class="row g-3 align-items-start">
+                  <div class="col-12">
+                    <div>
+                      <strong>Deal hours:</strong>
+                      <span>{{ place.deal_hours or 'Not specified' }}</span>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <p>{{ place.description }}</p>
+                  </div>
+
+                  {% if place.all_photo_filenames %}
+                  <div class="col-12">
+                    <div class="d-flex flex-wrap gap-2">
+                      {% for fn in place.all_photo_filenames %}
+                        <img src="{{ url_for('uploaded_file', filename=fn) }}" class="img-fluid rounded" style="max-height:220px" alt="{{ place.name }} photo" />
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+
+                  <div class="col-12">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#map-collapse-{{ place.id }}" aria-expanded="false" aria-controls="map-collapse-{{ place.id }}">
+                      Show map & directions
+                    </button>
+                    <div class="collapse mt-2 place-map-collapse" id="map-collapse-{{ place.id }}">
+                      <div class="map map-small" id="map-{{ place.id }}" data-lat="{{ place.latitude }}" data-lng="{{ place.longitude }}"></div>
+                      <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-outline-primary btn-sm get-directions" data-lat="{{ place.latitude }}" data-lng="{{ place.longitude }}">Get directions</button>
+                        <a class="btn btn-outline-success btn-sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query={{ (place.name ~ ' Bath, UK') | urlencode }}">Open in Google Maps</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <h6>Reviews</h6>
+                    {% if place.reviews|length == 0 %}
+                      <p class="text-muted">No reviews yet.</p>
+                    {% else %}
+                      <ul class="list-group mb-3">
+                        {% for r in place.reviews|sort(attribute='created_at', reverse=True) %}
+                          <li class="list-group-item">
+                            <strong>{{ r.rating }}/5</strong>
+                            <span class="text-muted small"> • {{ r.created_at.strftime('%d %b %Y') if r.created_at }}</span>
+                            <div>{{ r.text }}</div>
+                            {# Review photos no longer shown here #}
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+
+                    {% if session.get('user') %}
+                      <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#review-form-{{ place.id }}" aria-expanded="false" aria-controls="review-form-{{ place.id }}">
+                        Add review
+                      </button>
+                      <div class="collapse mt-2" id="review-form-{{ place.id }}">
+                        <form method="post" action="{{ url_for('add_review', place_id=place.id) }}" class="row g-2" enctype="multipart/form-data">
+                          <div class="col-auto">
+                            <label for="rating-{{ place.id }}" class="visually-hidden">Rating</label>
+                            <select id="rating-{{ place.id }}" name="rating" class="form-select" required>
+                              <option value="" selected disabled>Rating</option>
+                              {% for i in range(1,6) %}
+                                <option value="{{ i }}">{{ i }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                          <div class="col">
+                            <label for="text-{{ place.id }}" class="visually-hidden">Review</label>
+                            <textarea id="text-{{ place.id }}" name="text" class="form-control form-control-lg" rows="3" placeholder="Write a short review..." required></textarea>
+                          </div>
+                          <div class="col-auto">
+                            <label for="photo-{{ place.id }}" class="btn btn-outline-secondary" role="button">Upload picture</label>
+                            <input type="file" id="photo-{{ place.id }}" name="photo" accept="image/*" capture="environment" class="d-none" />
+                          </div>
+                          <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                          </div>
+                        </form>
+                      </div>
+                    {% else %}
+                      <p class="text-muted">Log in to add a review.</p>
+                      <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-secondary">Log in</a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="section-spacer-lg"></div>
+
+      {% if session.get('user') %}
+        <div class="text-center mb-2">
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#add-place-collapse" aria-expanded="false" aria-controls="add-place-collapse">Add a store</button>
+        </div>
+        <div class="collapse" id="add-place-collapse">
+          <div class="card">
+            <div class="card-header">Add a store in Bath</div>
+            <div class="card-body">
+              <form method="post" action="{{ url_for('add_place') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Place name</label>
+                  <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label for="deal_hours" class="form-label">Deal hours</label>
+                  <input type="text" id="deal_hours" name="deal_hours" class="form-control" placeholder="e.g. Weekdays 6–8pm or After 7pm" />
+                </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea id="description" name="description" rows="3" class="form-control" required placeholder="When do they reduce? What kind of items?"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label for="place_photo" class="form-label">Place photo (optional)</label>
+                  <input type="file" id="place_photo" name="place_photo" accept="image/*" capture="environment" class="form-control" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Pick location (click map)</label>
+                  <div id="picker-map" class="map map-picker" data-lat="51.3811" data-lng="-2.3590"></div>
+                  <input type="hidden" name="latitude" id="latitude">
+                  <input type="hidden" name="longitude" id="longitude">
+                </div>
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-success">Add Store</button>
+                </div>
+                <div class="form-text mt-2">Default map centered on Bath, UK.</div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-secondary">Log in to add a store</a>
+        </div>
+      {% endif %}
+    </div> <!-- end .main-card -->
+    <div class="card mt-3">
+      <div class="card-body py-3">
+        <p class="mb-0">
+          Also check out the
+          <a href="https://www.bath.ac.uk/campaigns/leave-no-trace/" target="_blank" rel="noopener">Munch Box</a>
+          on campus. I have found the Lime tree dinner at 7.30pm, M-F to be the most reliable munch box.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

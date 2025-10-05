@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# User uploaded files (now stored in instance/uploads)
+instance/uploads/
+instance/reduced_food.db
+
+# development environment files
+.vscode/
