@@ -337,7 +337,11 @@ def set_security_headers(resp):
     resp.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data: blob:; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' https://router.project-osrm.org; frame-ancestors 'self';"
     return resp
 
+def create_app():
+    init_db()
+    return app
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+    
