@@ -16,7 +16,17 @@ from dotenv import load_dotenv
 
 load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
-app = Flask(__name__, instance_relative_config=True)
+# Ensure instance is inside the project directory, not $HOME
+project_root = os.path.dirname(__file__)
+app = Flask(__name__, instance_path=os.path.join(project_root, "instance"), instance_relative_config=False)
+
+# Create the instance and uploads folder if missing
+if not os.path.exists(app.instance_path):
+    os.makedirs(app.instance_path, exist_ok=True)
+uploads_path = os.path.join(app.instance_path, 'uploads')
+if not os.path.exists(uploads_path):
+    os.makedirs(uploads_path, exist_ok=True)
+
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']  # require env var
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'reduced_food.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
