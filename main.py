@@ -18,7 +18,17 @@ load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
 # Ensure instance is inside the project directory, not $HOME
 project_root = os.path.dirname(__file__)
-app = Flask(__name__, instance_path=os.path.join(project_root, "instance"), instance_relative_config=False)
+
+app = Flask(
+    __name__,
+    instance_path=os.path.join(project_root, "instance"),
+    instance_relative_config=False,
+    static_url_path='/reducedfood/static',  # <-- tell Flask where static files live
+    static_folder='static',
+    template_folder='templates'
+)
+
+app.config['APPLICATION_ROOT'] = '/reducedfood'
 
 # Create the instance and uploads folder if missing
 if not os.path.exists(app.instance_path):
