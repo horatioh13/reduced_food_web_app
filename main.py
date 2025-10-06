@@ -215,7 +215,13 @@ def login_required(f):
 @app.route('/login')
 def login():
     ticket = request.args.get('ticket')
-    service = url_for('login', _external=True)
+    # Determine service URL dynamically
+    if os.environ.get('FLASK_ENV') == 'development':
+        # Local testing
+        service = url_for('login', _external=True)
+    else:
+        # Production under /reducedfood
+        service = f"https://makerspace.su.bath.ac.uk/reducedfood/login"
     if not ticket:
         # Redirect to CAS login
         return redirect(f"{CAS_BASE}{CAS_LOGIN_ROUTE}?service={quote_plus(service)}")
@@ -228,6 +234,7 @@ def login():
         return redirect(nxt)
     flash('CAS login failed. Please try again.', 'danger')
     return redirect(url_for('index'))
+
 
 @app.route('/logout')
 def logout():
