@@ -29,6 +29,8 @@ app = Flask(
 )
 
 app.config['APPLICATION_ROOT'] = '/reducedfood'
+app.config['SERVER_NAME'] = 'makerspace.su.bath.ac.uk'
+
 
 # Create the instance and uploads folder if missing
 if not os.path.exists(app.instance_path):
