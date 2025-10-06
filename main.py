@@ -215,25 +215,25 @@ def login_required(f):
 @app.route('/login')
 def login():
     ticket = request.args.get('ticket')
-    # Determine service URL dynamically
-    if os.environ.get('FLASK_ENV') == 'development':
-        # Local testing
-        service = url_for('login', _external=True)
-    else:
-        # Production under /reducedfood
-        service = f"https://makerspace.su.bath.ac.uk/reducedfood/login"
+
+    # Full service URL must include /reducedfood/login for CAS to redirect back correctly
+    service = f"https://makerspace.su.bath.ac.uk/reducedfood/login"
+
     if not ticket:
-        # Redirect to CAS login
+        # Redirect user to CAS login
         return redirect(f"{CAS_BASE}{CAS_LOGIN_ROUTE}?service={quote_plus(service)}")
-    # Validate ticket from CAS
+
+    # Validate the ticket from CAS
     user = cas_validate(ticket, service)
     if user:
         session['user'] = user
         flash(f'Logged in as {user}', 'success')
         nxt = session.pop('next', None) or url_for('index')
         return redirect(nxt)
+
     flash('CAS login failed. Please try again.', 'danger')
     return redirect(url_for('index'))
+
 
 
 @app.route('/logout')
