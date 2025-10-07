@@ -13,6 +13,7 @@ from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
 from PIL import Image, ImageOps
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
@@ -358,6 +359,28 @@ def set_security_headers(resp):
 
 def create_app():
     init_db()
+    # Ensure Flask sees correct script name when behind a reverse proxy
+    # nginx will set X-Forwarded-Prefix to the mounted path (/reducedfood)
+    class PrefixMiddleware:
+        def __init__(self, app):
+            self.app = app
+
+        def __call__(self, environ, start_response):
+            # If the proxy provided a prefix header, set SCRIPT_NAME so
+            # url_for and redirects generate URLs with the prefix.
+            prefix = environ.get('HTTP_X_FORWARDED_PREFIX', '')
+            if prefix:
+                environ['SCRIPT_NAME'] = prefix.rstrip('/')
+                # Adjust PATH_INFO if it also contains the prefix
+                path = environ.get('PATH_INFO', '')
+                if path.startswith(prefix):
+                    environ['PATH_INFO'] = path[len(prefix):] or '/'
+            return self.app(environ, start_response)
+
+    # Apply ProxyFix to trust forwarded headers from nginx (one proxy hop)
+    proxied = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    app.wsgi_app = PrefixMiddleware(proxied)
+
     return app
 
 if __name__ == '__main__':
