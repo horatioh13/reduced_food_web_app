@@ -354,7 +354,15 @@ def set_security_headers(resp):
     resp.headers['Referrer-Policy'] = 'no-referrer'
     resp.headers['Permissions-Policy'] = 'geolocation=()'
     resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    resp.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data: blob:; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' https://router.project-osrm.org; frame-ancestors 'self';"
+    # Allow OpenStreetMap tile images; keep scripts/styles from CDNs you use
+    resp.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "img-src 'self' data: blob: https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; "
+        "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+        "connect-src 'self' https://router.project-osrm.org; "
+        "frame-ancestors 'self';"
+    )
     return resp
 
 def create_app():
@@ -388,4 +396,3 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-    
