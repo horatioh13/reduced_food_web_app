@@ -31,6 +31,9 @@
       latInput.value = e.latlng.lat.toFixed(6);
       lngInput.value = e.latlng.lng.toFixed(6);
     });
+    // keep a handle and mark initialized
+    el._leaflet_map = map;
+    el.dataset.initialized = '1';
     return map;
   }
 
@@ -46,9 +49,23 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Init any picker map
+    // Defer picker initialization until its collapse is visible to avoid grey tiles
+    document.addEventListener('shown.bs.collapse', ev => {
+      ev.target.querySelectorAll('.map-picker').forEach(el => {
+        if (!el.dataset.initialized) {
+          initPicker(el);
+          // ensure proper sizing after the collapse animation
+          setTimeout(() => { if (el._leaflet_map) el._leaflet_map.invalidateSize(); }, 50);
+        } else if (el._leaflet_map) {
+          setTimeout(() => { el._leaflet_map.invalidateSize(); }, 50);
+        }
+      });
+    });
+
+    // If a picker is already visible (not inside a collapse), init it now
     document.querySelectorAll('.map-picker').forEach(el => {
-      if (!el.dataset.initialized) { initPicker(el); el.dataset.initialized = '1'; }
+      const isVisible = !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+      if (isVisible && !el.dataset.initialized) { initPicker(el); }
     });
 
     // Init small place maps lazily when accordion inner collapse opens
