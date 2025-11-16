@@ -353,11 +353,21 @@ def set_security_headers(resp):
     resp.headers['X-Frame-Options'] = 'SAMEORIGIN'
     resp.headers['Referrer-Policy'] = 'no-referrer'
     resp.headers['Permissions-Policy'] = 'geolocation=()'
-    resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    # Allow OpenStreetMap tile images; keep scripts/styles from CDNs you use
+
+    # Only send HSTS when the incoming request is already secure (avoid forcing HTTPS on plain HTTP)
+    try:
+        from flask import request
+        if request.is_secure:
+            resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        else:
+            resp.headers.pop('Strict-Transport-Security', None)
+    except Exception:
+        resp.headers.pop('Strict-Transport-Security', None)
+
+    # Allow OpenStreetMap tiles and common CDNs used by Leaflet/bootstrap
     resp.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "img-src 'self' data: blob: https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; "
+        "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com https://cdn.jsdelivr.net; "
         "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
         "connect-src 'self' https://router.project-osrm.org; "
