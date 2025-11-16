@@ -15,6 +15,7 @@ from PIL import Image, ImageOps
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_leaflet import Leaflet
+from markupsafe import Markup
 
 load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
@@ -381,6 +382,16 @@ def create_app():
     # Initialize Flask-Leaflet extension so templates can call leaflet helpers
     leaflet_ext = Leaflet()
     leaflet_ext.init_app(app)
+    # Fallback template helpers: if the Leaflet extension doesn't expose .css/.js,
+    # provide simple globals that inject the Leaflet CDN resources.
+    def _leaflet_css():
+        return Markup('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="" crossorigin=""/>')
+
+    def _leaflet_js():
+        return Markup('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="" crossorigin=""></script>')
+
+    app.jinja_env.globals['leaflet_css'] = _leaflet_css
+    app.jinja_env.globals['leaflet_js'] = _leaflet_js
     # Ensure Flask sees correct script name when behind a reverse proxy
     # nginx will set X-Forwarded-Prefix to the mounted path (/reducedfood)
     class PrefixMiddleware:
