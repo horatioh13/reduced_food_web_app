@@ -14,6 +14,7 @@ from flask_wtf.csrf import generate_csrf
 from PIL import Image, ImageOps
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_leaflet import Leaflet
 
 load_dotenv()  # NEW: loads .env so SECRET_KEY is available
 
@@ -377,6 +378,9 @@ def set_security_headers(resp):
 
 def create_app():
     init_db()
+    # Initialize Flask-Leaflet extension so templates can call leaflet helpers
+    leaflet_ext = Leaflet()
+    leaflet_ext.init_app(app)
     # Ensure Flask sees correct script name when behind a reverse proxy
     # nginx will set X-Forwarded-Prefix to the mounted path (/reducedfood)
     class PrefixMiddleware:
